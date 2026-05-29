@@ -33,6 +33,14 @@
             :key="producto.id"
             class="producto-card"
         >
+          <img
+              v-if="producto.imagen_url"
+              :src="producto.imagen_url"
+              :alt="producto.nombre"
+              class="producto-imagen"
+          />
+          <div v-else class="producto-imagen-placeholder">📦</div>
+
           <div class="card-body">
             <h4>{{ producto.nombre }}</h4>
             <p class="descripcion">{{ producto.descripcion || 'Sin descripción' }}</p>
@@ -41,6 +49,7 @@
               <span class="stock">Stock: {{ producto.stock }}</span>
             </div>
           </div>
+
           <button class="btn-agregar" @click="carrito.agregar(producto)">
             <template v-if="carrito.cantidadDeProducto(producto.id) > 0">
               En carrito ({{ carrito.cantidadDeProducto(producto.id) }})
@@ -49,6 +58,7 @@
               🛒 Agregar al carrito
             </template>
           </button>
+
           <RouterLink :to="`/catalogo/${producto.id}`" class="btn-detalle">
             Ver detalle
           </RouterLink>
@@ -65,11 +75,11 @@ import { useAuthStore } from '@/stores/auth'
 import { useCarritoStore } from '@/stores/carrito'
 import CartIcon from '@/components/CartIcon.vue'
 
-const auth     = useAuthStore()
-const carrito  = useCarritoStore()
-const loading  = ref(true)
-const productos = ref([])
-const busqueda  = ref('')
+const auth      = useAuthStore()
+const carrito   = useCarritoStore()
+const loading   = ref(true)
+const productos  = ref([])
+const busqueda   = ref('')
 
 const productosFiltrados = computed(() =>
     productos.value.filter(p =>
@@ -132,6 +142,20 @@ onMounted(async () => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+.producto-imagen {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+}
+.producto-imagen-placeholder {
+  width: 100%;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f2f5;
+  font-size: 3rem;
 }
 .card-body { padding: 1.5rem; flex: 1; }
 .card-body h4 { margin: 0 0 0.5rem; }
