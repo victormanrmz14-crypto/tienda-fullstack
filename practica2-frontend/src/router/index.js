@@ -5,6 +5,22 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
+      path: '/',
+      name: 'home',
+      component: () => import('@/views/HomeView.vue'),
+    },
+    {
+      path: '/catalogo',
+      name: 'catalogo',
+      component: () => import('@/views/CatalogoView.vue'),
+    },
+    {
+      path: '/catalogo/:id',
+      name: 'producto-detalle',
+      component: () => import('@/views/ProductoDetalle.vue'),
+      props: true,
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('@/views/LoginView.vue'),
@@ -15,22 +31,39 @@ const router = createRouter({
       component: () => import('@/views/RegisterView.vue'),
     },
     {
-      path: '/dashboard',
-      name: 'dashboard',
-      component: () => import('@/views/DashboardView.vue'),
+      path: '/admin',
+      component: () => import('@/layouts/AdminLayout.vue'),
       meta: { requiresAuth: true },
+      children: [
+        {
+          path: '',
+          name: 'admin-dashboard',
+          component: () => import('@/views/admin/Dashboard.vue'),
+        },
+        {
+          path: 'productos',
+          name: 'admin-productos',
+          component: () => import('@/views/admin/Productos.vue'),
+        },
+      ],
     },
     {
       path: '/:pathMatch(.*)*',
-      redirect: '/login',
+      name: 'not-found',
+      component: () => import('@/views/NotFound.vue'),
     },
   ],
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const auth = useAuthStore()
+
+  if (auth.token && !auth.user) {
+    await auth.fetchUser()
+  }
+
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    return { name: 'login' }
+    return { path: '/login', query: { redirect: to.fullPath } }
   }
 })
 
