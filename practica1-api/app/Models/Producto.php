@@ -7,8 +7,28 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Producto extends Model
 {
+    protected $fillable = ['nombre', 'descripcion', 'precio', 'stock', 'imagen', 'categoria_id'];
+
     public function categoria(): BelongsTo {
         return $this->belongsTo(Categoria::class);
     }
-    protected $fillable = ['nombre', 'descripcion', 'precio', 'stock', 'imagen', 'categoria_id'];
+
+    public function scopeBuscar($query, $termino) {
+        return $query->when($termino, fn($q) =>
+            $q->where('nombre', 'LIKE', "%{$termino}%")
+              ->orWhere('descripcion', 'LIKE', "%{$termino}%")
+        );
+    }
+
+    public function scopeDeCategoria($query, $categoriaId) {
+        return $query->when($categoriaId,
+            fn($q) => $q->where('categoria_id', $categoriaId)
+        );
+    }
+
+    public function scopeRangoPrecio($query, $min, $max) {
+        return $query
+            ->when($min, fn($q) => $q->where('precio', '>=', $min))
+            ->when($max, fn($q) => $q->where('precio', '<=', $max));
+    }
 }

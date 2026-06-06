@@ -1,64 +1,51 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { useCarritoStore } from '@/stores/carrito'
+import { useAuthStore } from '@/stores/auth'
+import { useFiltros } from '@/composables/useFiltros'
+import FiltrosPanel from '@/components/FiltrosPanel.vue'
+import PaginacionNav from '@/components/PaginacionNav.vue'
 import CartIcon from '@/components/CartIcon.vue'
 
 const carrito = useCarritoStore()
-const router  = useRouter()
+const auth = useAuthStore()
+const route = useRoute()
+const router = useRouter()
+
+const { filtros, limpiar } = useFiltros()
+
+const resultado = ref({ data: [], meta: {} })
+const cargando = ref(false)
+
+const cargarProductos = async () => {
+  cargando.value = true
+  try {
+    const { data } = await axios.get('http://localhost:8000/api/productos', {
+      params: {
+        busqueda: filtros.busqueda || undefined,
+        categoria_id: filtros.categoria_id || undefined,
+        precio_min: filtros.precio_min || undefined,
+        precio_max: filtros.precio_max || undefined,
+        orden: filtros.orden,
+        dir: filtros.dir,
+        page: filtros.pagina,
+      },
+    })
+    resultado.value = data
+  } finally {
+    cargando.value = false
+  }
+}
+
+// Recarga cuando cambia la URL (filtros sincronizados → URL → fetch)
+watch(() => route.query, cargarProductos, { immediate: true })
 
 const regresar = () => {
   if (window.history.length > 1) router.back()
   else router.push('/')
 }
-
-const categorias      = ref([])
-const categoriaActiva = ref(null)
-const productos       = ref([])
-const cargando        = ref(false)
-const busqueda        = ref('')
-
-const cargarTodos = async () => {
-  cargando.value = true
-  try {
-    const { data } = await axios.get('http://localhost:8000/api/productos')
-    productos.value = data
-  } finally {
-    cargando.value = false
-  }
-}
-
-onMounted(async () => {
-  const { data } = await axios.get('http://localhost:8000/api/categorias')
-  categorias.value = data.data
-  await cargarTodos()
-})
-
-const filtrarPorCategoria = async (cat) => {
-  categoriaActiva.value = cat
-  cargando.value = true
-  try {
-    const { data } = await axios.get(`http://localhost:8000/api/categorias/${cat.id}/productos`)
-    productos.value = data.data
-  } finally {
-    cargando.value = false
-  }
-}
-
-const verTodos = async () => {
-  categoriaActiva.value = null
-  await cargarTodos()
-}
-
-const productosFiltrados = computed(() => {
-  const q = busqueda.value.trim().toLowerCase()
-  if (!q) return productos.value
-  return productos.value.filter(p =>
-    p.nombre.toLowerCase().includes(q) ||
-    (p.descripcion || '').toLowerCase().includes(q)
-  )
-})
 
 const formatoPrecio = (precio) =>
   new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(precio)
@@ -73,95 +60,89 @@ const formatoPrecio = (precio) =>
       </div>
       <div class="nav-links">
         <RouterLink to="/">Inicio</RouterLink>
+        <RouterLink v-if="!auth.isAuthenticated" to="/login">Login</RouterLink>
+        <RouterLink v-if="auth.isAuthenticated" to="/admin">Admin</RouterLink>
         <CartIcon />
       </div>
     </nav>
 
     <div class="catalogo">
-    <header class="catalogo-header">
-      <div>
-        <h2>Catálogo</h2>
-        <p class="subtitulo">Explora nuestros productos disponibles</p>
-      </div>
-      <div class="buscador">
-        <input
-          v-model="busqueda"
-          type="search"
-          placeholder="Buscar producto..."
-        />
-      </div>
-    </header>
-
-    <!-- Tabs de categorías -->
-    <div class="tabs">
-      <button :class="{ activo: categoriaActiva === null }" @click="verTodos">
-        Todos
-      </button>
-      <button
-        v-for="cat in categorias"
-        :key="cat.id"
-        :class="{ activo: categoriaActiva?.id === cat.id }"
-        @click="filtrarPorCategoria(cat)"
-      >
-        {{ cat.nombre }}
-      </button>
-    </div>
-
-    <!-- Estados -->
-    <div v-if="cargando" class="estado">Cargando productos...</div>
-    <div v-else-if="productosFiltrados.length === 0" class="estado">
-      No se encontraron productos.
-    </div>
-
-    <!-- Grid de productos -->
-    <div v-else class="productos-grid">
-      <article
-        v-for="producto in productosFiltrados"
-        :key="producto.id"
-        class="card"
-      >
-        <div class="card-imagen">
-          <img
-            v-if="producto.imagen_url"
-            :src="producto.imagen_url"
-            :alt="producto.nombre"
-          />
-          <div v-else class="placeholder">Sin imagen</div>
-          <span
-            v-if="producto.categoria"
-            class="badge-categoria"
-          >{{ producto.categoria.nombre }}</span>
+      <header class="catalogo-header">
+        <div>
+          <h2>Catálogo</h2>
+          <p class="subtitulo">Explora nuestros productos disponibles</p>
         </div>
+      </header>
 
-        <div class="card-cuerpo">
-          <h3>{{ producto.nombre }}</h3>
-          <p class="descripcion">
-            {{ producto.descripcion || 'Sin descripción' }}
-          </p>
+      <div class="layout">
+        <FiltrosPanel v-model="filtros" @limpiar="limpiar" />
 
-          <div class="card-meta">
-            <strong class="precio">{{ formatoPrecio(producto.precio) }}</strong>
-            <span
-              :class="['stock', producto.stock > 0 ? 'disponible' : 'agotado']"
-            >
-              {{ producto.stock > 0 ? `${producto.stock} en stock` : 'Agotado' }}
-            </span>
+        <section class="contenido">
+          <div v-if="cargando" class="estado">Cargando productos...</div>
+          <div v-else-if="resultado.data.length === 0" class="estado">
+            No se encontraron productos.
           </div>
 
-          <button
-            class="btn-agregar"
-            :disabled="producto.stock <= 0"
-            @click="carrito.agregar(producto)"
-          >
-            {{ producto.stock > 0 ? 'Agregar al carrito' : 'No disponible' }}
-            <span
-              v-if="carrito.cantidadDeProducto(producto.id) > 0"
-              class="contador"
-            >{{ carrito.cantidadDeProducto(producto.id) }}</span>
-          </button>
-        </div>
-      </article>
-    </div>
+          <template v-else>
+            <div class="productos-grid">
+              <article
+                v-for="producto in resultado.data"
+                :key="producto.id"
+                class="card"
+              >
+                <div class="card-imagen">
+                  <img
+                    v-if="producto.imagen_url"
+                    :src="producto.imagen_url"
+                    :alt="producto.nombre"
+                  />
+                  <div v-else class="placeholder">Sin imagen</div>
+                  <span v-if="producto.categoria" class="badge-categoria">
+                    {{ producto.categoria.nombre }}
+                  </span>
+                </div>
+
+                <div class="card-cuerpo">
+                  <h3>{{ producto.nombre }}</h3>
+                  <p class="descripcion">
+                    {{ producto.descripcion || 'Sin descripción' }}
+                  </p>
+
+                  <div class="card-meta">
+                    <strong class="precio">{{ formatoPrecio(producto.precio) }}</strong>
+                    <span
+                      :class="['stock', producto.stock > 0 ? 'disponible' : 'agotado']"
+                    >
+                      {{ producto.stock > 0 ? `${producto.stock} en stock` : 'Agotado' }}
+                    </span>
+                  </div>
+
+                  <button
+                    class="btn-agregar"
+                    :disabled="producto.stock <= 0"
+                    @click="carrito.agregar(producto)"
+                  >
+                    {{ producto.stock > 0 ? 'Agregar al carrito' : 'No disponible' }}
+                    <span
+                      v-if="carrito.cantidadDeProducto(producto.id) > 0"
+                      class="contador"
+                    >{{ carrito.cantidadDeProducto(producto.id) }}</span>
+                  </button>
+
+                  <RouterLink :to="`/catalogo/${producto.id}`" class="ver-detalle">
+                    Ver detalle →
+                  </RouterLink>
+                </div>
+              </article>
+            </div>
+
+            <PaginacionNav
+              :meta="resultado.meta"
+              @cambio-pagina="filtros.pagina = $event"
+            />
+          </template>
+        </section>
+      </div>
     </div>
   </div>
 </template>
@@ -195,49 +176,22 @@ const formatoPrecio = (precio) =>
 .btn-volver:hover { background: #f0f0f0; }
 
 .catalogo {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 1rem;
 }
 .catalogo-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  flex-wrap: wrap;
-  gap: 1rem;
   margin-bottom: 1.5rem;
 }
 .catalogo-header h2 { margin: 0; }
 .subtitulo { margin: 0.3rem 0 0; color: #777; font-size: 0.9rem; }
-.buscador input {
-  padding: 0.6rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 999px;
-  font-size: 0.95rem;
-  min-width: 240px;
-}
 
-/* Tabs */
-.tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 2rem;
-}
-.tabs button {
-  padding: 0.5rem 1.2rem;
-  border: 1px solid #ddd;
-  background: white;
-  border-radius: 999px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.15s;
-}
-.tabs button:hover { border-color: #42b883; color: #42b883; }
-.tabs button.activo {
-  background: #42b883;
-  border-color: #42b883;
-  color: white;
+/* Layout de dos columnas */
+.layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 1.5rem;
+  align-items: start;
 }
 
 /* Estados */
@@ -246,7 +200,7 @@ const formatoPrecio = (precio) =>
 /* Grid */
 .productos-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 1.5rem;
 }
 .card {
@@ -276,7 +230,7 @@ const formatoPrecio = (precio) =>
 .badge-categoria {
   position: absolute;
   top: 0.6rem; left: 0.6rem;
-  background: rgba(53,73,94,0.9);
+  background: #42b883;
   color: white;
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
@@ -334,5 +288,17 @@ const formatoPrecio = (precio) =>
   border-radius: 999px;
   padding: 0 0.5rem;
   font-size: 0.8rem;
+}
+.ver-detalle {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #42b883;
+  text-decoration: none;
+  margin-top: 0.25rem;
+}
+.ver-detalle:hover { text-decoration: underline; }
+
+@media (max-width: 720px) {
+  .layout { grid-template-columns: 1fr; }
 }
 </style>

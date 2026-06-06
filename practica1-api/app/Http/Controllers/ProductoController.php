@@ -3,23 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Models\Producto;
+use App\Http\Resources\ProductoResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class ProductoController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $productos = Producto::with('categoria')->orderBy('id', 'desc')->get()->map(function ($producto) {
-            return [
-                ...$producto->toArray(),
-                'imagen_url' => $producto->imagen
-                    ? asset('storage/' . $producto->imagen)
-                    : null,
-            ];
-        });
+        $productos = Producto::with('categoria')
+            ->buscar($request->busqueda)
+            ->deCategoria($request->categoria_id)
+            ->rangoPrecio($request->precio_min, $request->precio_max)
+            ->orderBy($request->get('orden', 'nombre'), $request->get('dir', 'asc'))
+            ->paginate($request->get('por_pagina', 15));
 
-        return response()->json($productos, 200);
+        return ProductoResource::collection($productos);
     }
 
     public function store(Request $request)
