@@ -145,9 +145,8 @@ const headers = { Authorization: `Bearer ${auth.token}` }
 const cargarProductos = async () => {
   loadingProductos.value = true
   try {
-    // ✅ Cargamos con eager loading para traer la categoría de cada producto
     const res = await axios.get('http://localhost:8000/api/productos')
-    productos.value = res.data
+    productos.value = res.data.data
   } catch (e) {
     console.error(e)
   } finally {
