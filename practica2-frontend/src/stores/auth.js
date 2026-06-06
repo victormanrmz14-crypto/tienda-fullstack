@@ -7,8 +7,9 @@ const api = axios.create({
 
 export const useAuthStore = defineStore('auth', {
     state: () => ({
-        user:  null,
-        token: localStorage.getItem('token') || null,
+        user:       null,
+        token:      localStorage.getItem('token') || null,
+        permisos:   { crear: false, editar: false, eliminar: false },
     }),
 
     getters: {
@@ -20,6 +21,7 @@ export const useAuthStore = defineStore('auth', {
             const res = await api.post('/register', data)
             this.token = res.data.token
             this.user  = res.data.user
+            this.permisos = res.data.user.permisos ?? { crear: false, editar: false, eliminar: false }
             localStorage.setItem('token', this.token)
         },
 
@@ -27,6 +29,7 @@ export const useAuthStore = defineStore('auth', {
             const res = await api.post('/login', credentials)
             this.token = res.data.token
             this.user  = res.data.user
+            this.permisos = res.data.user.permisos ?? { crear: false, editar: false, eliminar: false }
             localStorage.setItem('token', this.token)
         },
 
@@ -43,7 +46,8 @@ export const useAuthStore = defineStore('auth', {
             const res = await api.get('/me', {
                 headers: { Authorization: `Bearer ${this.token}` }
             })
-            this.user = res.data.user
+            this.user = res.data
+            this.permisos = res.data.permisos ?? { crear: false, editar: false, eliminar: false }
         },
     },
 })

@@ -1,8 +1,11 @@
 <template>
   <div class="admin-productos">
     <div class="page-header">
-      <h2>Gestión de Productos</h2>
-      <button class="btn-nuevo" @click="mostrarFormulario = true">
+      <div>
+        <h2>Gestión de Productos</h2>
+        <span class="badge-rol">{{ auth.user?.rol }}</span>
+      </div>
+      <button class="btn-nuevo" @click="mostrarFormulario = true" v-can="'crear'">
         + Nuevo Producto
       </button>
     </div>
@@ -102,8 +105,8 @@
             <td>${{ producto.precio }}</td>
             <td>{{ producto.stock }}</td>
             <td>
-              <button class="btn-editar" @click="editar(producto)">✏️</button>
-              <button class="btn-eliminar" @click="eliminar(producto.id)">🗑️</button>
+              <button class="btn-editar" @click="editar(producto)" v-can="'editar'">✏️</button>
+              <button class="btn-eliminar" @click="eliminar(producto.id)" v-can="'eliminar'">🗑️</button>
             </td>
           </tr>
         </tbody>
@@ -246,6 +249,16 @@ onMounted(async () => {
 .admin-productos h2 { margin: 0 0 2rem; }
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
 .page-header h2 { margin: 0; }
+.page-header > div { display: flex; align-items: center; gap: 1rem; }
+.badge-rol {
+  background: #35495e;
+  color: white;
+  padding: 0.2rem 0.7rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  font-weight: 600;
+}
 .btn-nuevo {
   background: #42b883;
   color: white;

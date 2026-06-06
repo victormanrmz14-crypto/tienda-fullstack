@@ -23,6 +23,7 @@ class ProductoController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorize('create', Producto::class);
         $datos = $request->validate([
             'nombre'       => 'required|string|max:255',
             'descripcion'  => 'nullable|string',
@@ -59,6 +60,7 @@ class ProductoController extends Controller
 
     public function update(Request $request, Producto $producto)
     {
+        $this->authorize('update', $producto);
         $datos = $request->validate([
             'nombre'       => 'required|string|max:255',
             'descripcion'  => 'nullable|string',
@@ -90,6 +92,7 @@ class ProductoController extends Controller
 
     public function destroy(Producto $producto)
     {
+        $this->authorize('delete', $producto);
         $producto->delete();
 
         return response()->json(null, 204);

@@ -4,6 +4,7 @@
       <div class="sidebar-header">
         <h2>⚙️ Admin</h2>
         <p class="user-name">{{ auth.user?.name }}</p>
+        <p class="user-rol">{{ auth.user?.rol }}</p>
       </div>
 
       <nav class="sidebar-nav">
@@ -57,6 +58,12 @@ const handleLogout = async () => {
 .sidebar-header { border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; }
 .sidebar-header h2 { margin: 0 0 0.3rem; font-size: 1.2rem; }
 .user-name { margin: 0; font-size: 0.85rem; opacity: 0.7; }
+.user-rol {
+  margin: 0;
+  font-size: 0.75rem;
+  opacity: 0.5;
+  text-transform: uppercase;
+}
 .sidebar-nav {
   display: flex;
   flex-direction: column;
