@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\StockBajoAlerta;
 use App\Models\Producto;
 use App\Http\Resources\ProductoResource;
 use App\Http\Requests\StoreProductoRequest;
@@ -66,6 +67,11 @@ class ProductoController extends Controller
 
         $producto->update($datos);
         $producto->load('categoria');
+
+        $producto->refresh();
+        if ($producto->stock !== null && $producto->stock <= 5) {
+            broadcast(new StockBajoAlerta($producto, $producto->stock));
+        }
 
         return response()->json([
             ...$producto->toArray(),

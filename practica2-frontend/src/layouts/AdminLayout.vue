@@ -21,12 +21,14 @@
     <main class="main-content">
       <RouterView />
     </main>
+    <AdminNotificaciones v-if="auth.user?.rol === 'admin'" />
   </div>
 </template>
 
 <script setup>
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import AdminNotificaciones from '@/components/AdminNotificaciones.vue'
 
 const auth   = useAuthStore()
 const router = useRouter()

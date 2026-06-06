@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\NuevoPedidoRecibido;
+use App\Events\StockBajoAlerta;
 use App\Jobs\EnviarConfirmacionPedido;
 use App\Models\Pedido;
 use App\Models\Producto;
@@ -36,12 +38,19 @@ class PedidoController extends Controller
                 ]);
                 Producto::find($item['producto_id'])
                         ->decrement('stock', $item['cantidad']);
+
+                $productoActualizado = Producto::find($item['producto_id']);
+                if ($productoActualizado->stock <= 5) {
+                    broadcast(new StockBajoAlerta($productoActualizado, $productoActualizado->stock));
+                }
             }
 
             return $p;
         });
 
         EnviarConfirmacionPedido::dispatch($pedido)->delay(now()->addSeconds(5));
+
+        broadcast(new NuevoPedidoRecibido($pedido))->toOthers();
 
         return response()->json([
             'pedido_id' => $pedido->id,
