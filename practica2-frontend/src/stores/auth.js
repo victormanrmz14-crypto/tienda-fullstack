@@ -20,17 +20,15 @@ export const useAuthStore = defineStore('auth', {
         async register(data) {
             const res = await api.post('/register', data)
             this.token = res.data.token
-            this.user  = res.data.user
-            this.permisos = res.data.user.permisos ?? { crear: false, editar: false, eliminar: false }
             localStorage.setItem('token', this.token)
+            await this.fetchUser()
         },
 
         async login(credentials) {
             const res = await api.post('/login', credentials)
             this.token = res.data.token
-            this.user  = res.data.user
-            this.permisos = res.data.user.permisos ?? { crear: false, editar: false, eliminar: false }
             localStorage.setItem('token', this.token)
+            await this.fetchUser()
         },
 
         async logout() {
