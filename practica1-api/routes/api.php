@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\ProductoController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -27,4 +28,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/productos',             [ProductoController::class, 'store']);
     Route::put('/productos/{producto}',   [ProductoController::class, 'update']);
     Route::delete('/productos/{producto}',[ProductoController::class, 'destroy']);
+
+    Route::post('pedidos',              [PedidoController::class, 'store']);
+    Route::get('pedidos',               [PedidoController::class, 'index']);
+    Route::get('pedidos/{pedido}',      [PedidoController::class, 'show']);
 });
