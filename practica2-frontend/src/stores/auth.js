@@ -41,11 +41,17 @@ export const useAuthStore = defineStore('auth', {
         },
 
         async fetchUser() {
-            const res = await api.get('/me', {
-                headers: { Authorization: `Bearer ${this.token}` }
-            })
-            this.user = res.data
-            this.permisos = res.data.permisos ?? { crear: false, editar: false, eliminar: false }
+            try {
+                const res = await api.get('/me', {
+                    headers: { Authorization: `Bearer ${this.token}` }
+                })
+                this.user = res.data
+                this.permisos = res.data.permisos ?? { crear: false, editar: false, eliminar: false }
+            } catch {
+                this.token = null
+                this.user  = null
+                localStorage.removeItem('token')
+            }
         },
     },
 })
