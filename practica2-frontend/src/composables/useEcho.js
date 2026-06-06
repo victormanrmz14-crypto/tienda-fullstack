@@ -10,23 +10,22 @@ export function useAdminChannel() {
 
   const conectar = () => {
     // Actualiza el token en Echo antes de conectar
-    echo.options.auth = {
-      headers: {
-        Authorization: `Bearer ${auth.token}`
+    if (echo.options.auth) {
+      echo.options.auth.headers = {
+        Authorization: `Bearer ${auth.token}`,
+        Accept: 'application/json'
       }
     }
 
     channel = echo.private('admin-panel')
-
-      .listen('.NuevoPedidoRecibido', (e) => {
+      .listen('NuevoPedidoRecibido', (e) => {
         pedidosNuevos.value.unshift(e)
         setTimeout(() => {
           const idx = pedidosNuevos.value.indexOf(e)
           if (idx > -1) pedidosNuevos.value.splice(idx, 1)
         }, 10000)
       })
-
-      .listen('.StockBajoAlerta', (e) => {
+      .listen('StockBajoAlerta', (e) => {
         alertasStock.value.unshift(e)
         setTimeout(() => {
           const idx = alertasStock.value.indexOf(e)
@@ -36,7 +35,9 @@ export function useAdminChannel() {
   }
 
   const desconectar = () => {
-    echo.leave('admin-panel')
+    if (channel) {
+      echo.leave('admin-panel')
+    }
   }
 
   onMounted(conectar)
