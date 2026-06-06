@@ -74,9 +74,9 @@ class AuthController extends Controller
             'email'    => $user->email,
             'rol'      => $user->rol,
             'permisos' => [
-                'crear'    => Gate::allows('crear-producto'),
-                'editar'   => Gate::allows('editar-producto'),
-                'eliminar' => Gate::allows('eliminar-producto'),
+                'crear'    => Gate::forUser($user)->allows('crear-producto'),
+                'editar'   => Gate::forUser($user)->allows('editar-producto'),
+                'eliminar' => Gate::forUser($user)->allows('eliminar-producto'),
             ],
         ]);
     }
