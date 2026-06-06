@@ -16,31 +16,44 @@
 
       <div v-if="mensaje" :class="['mensaje', tipoMensaje]">{{ mensaje }}</div>
 
-      <div class="form-group">
-        <label>Nombre</label>
-        <input v-model="form.nombre" type="text" placeholder="Nombre del producto" />
-      </div>
+      <InputField
+        label="Nombre"
+        name="nombre"
+        v-model="nombre"
+        placeholder="Nombre del producto"
+        :error="errors.nombre || erroresServidor.nombre?.[0]"
+      />
 
-      <div class="form-group">
-        <label>Descripción</label>
-        <textarea v-model="form.descripcion" placeholder="Descripción"></textarea>
-      </div>
+      <InputField
+        label="Descripción"
+        name="descripcion"
+        v-model="descripcion"
+        placeholder="Descripción del producto"
+        :error="errors.descripcion || erroresServidor.descripcion?.[0]"
+      />
 
       <div class="form-row">
-        <div class="form-group">
-          <label>Precio</label>
-          <input v-model="form.precio" type="number" placeholder="0.00" />
-        </div>
-        <div class="form-group">
-          <label>Stock</label>
-          <input v-model="form.stock" type="number" placeholder="0" />
-        </div>
+        <InputField
+          label="Precio"
+          name="precio"
+          type="number"
+          v-model="precio"
+          placeholder="0.00"
+          :error="errors.precio || erroresServidor.precio?.[0]"
+        />
+        <InputField
+          label="Stock"
+          name="stock"
+          type="number"
+          v-model="stock"
+          placeholder="0"
+          :error="errors.stock || erroresServidor.stock?.[0]"
+        />
       </div>
 
-      <!-- ✅ NUEVO: Selector de categoría -->
       <div class="form-group">
         <label>Categoría</label>
-        <select v-model="form.categoria_id">
+        <select v-model="categoria_id">
           <option value="">Sin categoría</option>
           <option
             v-for="cat in categorias"
@@ -95,7 +108,6 @@
               <span v-else class="sin-imagen">Sin imagen</span>
             </td>
             <td>{{ producto.nombre }}</td>
-            <!-- ✅ NUEVO: columna de categoría en la tabla -->
             <td>
               <span v-if="producto.categoria" class="badge-categoria">
                 {{ producto.categoria.nombre }}
@@ -119,7 +131,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
+import { useForm, useField } from 'vee-validate'
 import { useAuthStore } from '@/stores/auth'
+import { productoSchema } from '@/schemas/productoSchema'
+import InputField from '@/components/InputField.vue'
 
 const auth             = useAuthStore()
 const productos        = ref([])
@@ -131,14 +146,19 @@ const preview          = ref(null)
 const imagen           = ref(null)
 const mensaje          = ref('')
 const tipoMensaje      = ref('success')
+const categorias       = ref([])
+const categoria_id     = ref('')
+const erroresServidor  = ref({})
 
-// ✅ NUEVO: lista de categorías
-const categorias = ref([])
-
-const form = ref({
-  nombre: '', descripcion: '', precio: '', stock: '',
-  categoria_id: ''  // ✅ NUEVO campo
+const { handleSubmit, errors, resetForm, setValues } = useForm({
+  validationSchema: productoSchema,
+  initialValues: { nombre: '', descripcion: '', precio: '', stock: '' }
 })
+
+const { value: nombre }      = useField('nombre')
+const { value: descripcion } = useField('descripcion')
+const { value: precio }      = useField('precio')
+const { value: stock }       = useField('stock')
 
 const headers = { Authorization: `Bearer ${auth.token}` }
 
@@ -154,7 +174,6 @@ const cargarProductos = async () => {
   }
 }
 
-// ✅ NUEVO: cargar categorías desde la API
 const cargarCategorias = async () => {
   try {
     const res = await axios.get('http://localhost:8000/api/categorias')
@@ -171,16 +190,17 @@ const onImageChange = (e) => {
   preview.value = URL.createObjectURL(file)
 }
 
-const guardar = async () => {
+const guardar = handleSubmit(async (values) => {
   loading.value = true
   mensaje.value = ''
+  erroresServidor.value = {}
   try {
     const fd = new FormData()
-    fd.append('nombre',       form.value.nombre)
-    fd.append('descripcion',  form.value.descripcion)
-    fd.append('precio',       form.value.precio)
-    fd.append('stock',        form.value.stock)
-    fd.append('categoria_id', form.value.categoria_id)  // ✅ NUEVO
+    fd.append('nombre',       values.nombre)
+    fd.append('descripcion',  values.descripcion || '')
+    fd.append('precio',       values.precio)
+    fd.append('stock',        values.stock)
+    fd.append('categoria_id', categoria_id.value)
     if (imagen.value) fd.append('imagen', imagen.value)
 
     if (editando.value) {
@@ -193,28 +213,33 @@ const guardar = async () => {
         headers: { ...headers, 'Content-Type': 'multipart/form-data' }
       })
     }
-
     tipoMensaje.value = 'success'
     mensaje.value = editando.value ? 'Producto actualizado.' : 'Producto creado.'
     await cargarProductos()
     setTimeout(() => cancelar(), 1500)
   } catch (e) {
-    tipoMensaje.value = 'error'
-    mensaje.value = e.response?.data?.message || 'Error al guardar.'
+    if (e.response?.status === 422) {
+      erroresServidor.value = e.response.data.errors
+      tipoMensaje.value = 'error'
+      mensaje.value = 'Corrige los errores del formulario.'
+    } else {
+      tipoMensaje.value = 'error'
+      mensaje.value = e.response?.data?.message || 'Error al guardar.'
+    }
   } finally {
     loading.value = false
   }
-}
+})
 
 const editar = (producto) => {
   editando.value = producto.id
-  form.value = {
-    nombre:       producto.nombre,
-    descripcion:  producto.descripcion || '',
-    precio:       producto.precio,
-    stock:        producto.stock,
-    categoria_id: producto.categoria_id || ''  // ✅ NUEVO
-  }
+  setValues({
+    nombre:      producto.nombre,
+    descripcion: producto.descripcion || '',
+    precio:      producto.precio,
+    stock:       producto.stock,
+  })
+  categoria_id.value      = producto.categoria_id || ''
   preview.value           = producto.imagen_url || null
   mostrarFormulario.value = true
 }
@@ -231,16 +256,18 @@ const eliminar = async (id) => {
 
 const cancelar = () => {
   mostrarFormulario.value = false
-  editando.value  = null
-  imagen.value    = null
-  preview.value   = null
-  mensaje.value   = ''
-  form.value = { nombre: '', descripcion: '', precio: '', stock: '', categoria_id: '' }  // ✅ NUEVO
+  editando.value        = null
+  imagen.value          = null
+  preview.value         = null
+  mensaje.value         = ''
+  categoria_id.value    = ''
+  erroresServidor.value = {}
+  resetForm()
 }
 
 onMounted(async () => {
   await cargarProductos()
-  await cargarCategorias()  // ✅ NUEVO
+  await cargarCategorias()
 })
 </script>
 
@@ -275,9 +302,9 @@ onMounted(async () => {
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 .formulario-card h3 { margin: 0 0 1.5rem; }
-.form-group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-input, textarea, select {
+.form-group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem; }
+textarea, select {
   padding: 0.6rem 0.8rem;
   border: 1px solid #ddd;
   border-radius: 8px;
