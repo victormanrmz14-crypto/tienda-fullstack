@@ -17,10 +17,12 @@
         <label>Nombre</label>
         <input v-model="form.nombre" type="text" placeholder="Nombre del producto" />
       </div>
+
       <div class="form-group">
         <label>Descripción</label>
         <textarea v-model="form.descripcion" placeholder="Descripción"></textarea>
       </div>
+
       <div class="form-row">
         <div class="form-group">
           <label>Precio</label>
@@ -30,6 +32,21 @@
           <label>Stock</label>
           <input v-model="form.stock" type="number" placeholder="0" />
         </div>
+      </div>
+
+      <!-- ✅ NUEVO: Selector de categoría -->
+      <div class="form-group">
+        <label>Categoría</label>
+        <select v-model="form.categoria_id">
+          <option value="">Sin categoría</option>
+          <option
+            v-for="cat in categorias"
+            :key="cat.id"
+            :value="cat.id"
+          >
+            {{ cat.nombre }}
+          </option>
+        </select>
       </div>
 
       <div class="form-group">
@@ -54,33 +71,41 @@
     <div v-else>
       <table class="tabla">
         <thead>
-        <tr>
-          <th>Imagen</th>
-          <th>Nombre</th>
-          <th>Precio</th>
-          <th>Stock</th>
-          <th>Acciones</th>
-        </tr>
+          <tr>
+            <th>Imagen</th>
+            <th>Nombre</th>
+            <th>Categoría</th>
+            <th>Precio</th>
+            <th>Stock</th>
+            <th>Acciones</th>
+          </tr>
         </thead>
         <tbody>
-        <tr v-for="producto in productos" :key="producto.id">
-          <td>
-            <img
+          <tr v-for="producto in productos" :key="producto.id">
+            <td>
+              <img
                 v-if="producto.imagen_url"
                 :src="producto.imagen_url"
                 class="tabla-imagen"
                 alt="imagen"
-            />
-            <span v-else class="sin-imagen">Sin imagen</span>
-          </td>
-          <td>{{ producto.nombre }}</td>
-          <td>${{ producto.precio }}</td>
-          <td>{{ producto.stock }}</td>
-          <td>
-            <button class="btn-editar" @click="editar(producto)">✏️</button>
-            <button class="btn-eliminar" @click="eliminar(producto.id)">🗑️</button>
-          </td>
-        </tr>
+              />
+              <span v-else class="sin-imagen">Sin imagen</span>
+            </td>
+            <td>{{ producto.nombre }}</td>
+            <!-- ✅ NUEVO: columna de categoría en la tabla -->
+            <td>
+              <span v-if="producto.categoria" class="badge-categoria">
+                {{ producto.categoria.nombre }}
+              </span>
+              <span v-else class="sin-imagen">Sin categoría</span>
+            </td>
+            <td>${{ producto.precio }}</td>
+            <td>{{ producto.stock }}</td>
+            <td>
+              <button class="btn-editar" @click="editar(producto)">✏️</button>
+              <button class="btn-eliminar" @click="eliminar(producto.id)">🗑️</button>
+            </td>
+          </tr>
         </tbody>
       </table>
       <p v-if="productos.length === 0" class="empty">No hay productos registrados.</p>
@@ -93,19 +118,23 @@ import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 
-const auth            = useAuthStore()
-const productos       = ref([])
+const auth             = useAuthStore()
+const productos        = ref([])
 const loadingProductos = ref(true)
-const loading         = ref(false)
+const loading          = ref(false)
 const mostrarFormulario = ref(false)
-const editando        = ref(null)
-const preview         = ref(null)
-const imagen          = ref(null)
-const mensaje         = ref('')
-const tipoMensaje     = ref('success')
+const editando         = ref(null)
+const preview          = ref(null)
+const imagen           = ref(null)
+const mensaje          = ref('')
+const tipoMensaje      = ref('success')
+
+// ✅ NUEVO: lista de categorías
+const categorias = ref([])
 
 const form = ref({
-  nombre: '', descripcion: '', precio: '', stock: ''
+  nombre: '', descripcion: '', precio: '', stock: '',
+  categoria_id: ''  // ✅ NUEVO campo
 })
 
 const headers = { Authorization: `Bearer ${auth.token}` }
@@ -113,6 +142,7 @@ const headers = { Authorization: `Bearer ${auth.token}` }
 const cargarProductos = async () => {
   loadingProductos.value = true
   try {
+    // ✅ Cargamos con eager loading para traer la categoría de cada producto
     const res = await axios.get('http://localhost:8000/api/productos')
     productos.value = res.data
   } catch (e) {
@@ -122,11 +152,21 @@ const cargarProductos = async () => {
   }
 }
 
+// ✅ NUEVO: cargar categorías desde la API
+const cargarCategorias = async () => {
+  try {
+    const res = await axios.get('http://localhost:8000/api/categorias')
+    categorias.value = res.data.data
+  } catch (e) {
+    console.error(e)
+  }
+}
+
 const onImageChange = (e) => {
   const file = e.target.files[0]
   if (!file) return
-  imagen.value   = file
-  preview.value  = URL.createObjectURL(file)
+  imagen.value  = file
+  preview.value = URL.createObjectURL(file)
 }
 
 const guardar = async () => {
@@ -134,10 +174,11 @@ const guardar = async () => {
   mensaje.value = ''
   try {
     const fd = new FormData()
-    fd.append('nombre',      form.value.nombre)
-    fd.append('descripcion', form.value.descripcion)
-    fd.append('precio',      form.value.precio)
-    fd.append('stock',       form.value.stock)
+    fd.append('nombre',       form.value.nombre)
+    fd.append('descripcion',  form.value.descripcion)
+    fd.append('precio',       form.value.precio)
+    fd.append('stock',        form.value.stock)
+    fd.append('categoria_id', form.value.categoria_id)  // ✅ NUEVO
     if (imagen.value) fd.append('imagen', imagen.value)
 
     if (editando.value) {
@@ -166,12 +207,13 @@ const guardar = async () => {
 const editar = (producto) => {
   editando.value = producto.id
   form.value = {
-    nombre:      producto.nombre,
-    descripcion: producto.descripcion || '',
-    precio:      producto.precio,
-    stock:       producto.stock,
+    nombre:       producto.nombre,
+    descripcion:  producto.descripcion || '',
+    precio:       producto.precio,
+    stock:        producto.stock,
+    categoria_id: producto.categoria_id || ''  // ✅ NUEVO
   }
-  preview.value        = producto.imagen_url || null
+  preview.value           = producto.imagen_url || null
   mostrarFormulario.value = true
 }
 
@@ -191,10 +233,13 @@ const cancelar = () => {
   imagen.value    = null
   preview.value   = null
   mensaje.value   = ''
-  form.value = { nombre: '', descripcion: '', precio: '', stock: '' }
+  form.value = { nombre: '', descripcion: '', precio: '', stock: '', categoria_id: '' }  // ✅ NUEVO
 }
 
-onMounted(cargarProductos)
+onMounted(async () => {
+  await cargarProductos()
+  await cargarCategorias()  // ✅ NUEVO
+})
 </script>
 
 <style scoped>
@@ -220,13 +265,14 @@ onMounted(cargarProductos)
 .formulario-card h3 { margin: 0 0 1.5rem; }
 .form-group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-input, textarea {
+input, textarea, select {
   padding: 0.6rem 0.8rem;
   border: 1px solid #ddd;
   border-radius: 8px;
   font-size: 1rem;
 }
 textarea { resize: vertical; min-height: 80px; }
+select { background: white; cursor: pointer; }
 .preview img { margin-top: 0.5rem; max-width: 150px; border-radius: 8px; }
 .form-acciones { display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem; }
 .btn-cancelar {
@@ -265,6 +311,14 @@ textarea { resize: vertical; min-height: 80px; }
 .tabla tr:hover td { background: #f8f9fa; }
 .tabla-imagen { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; }
 .sin-imagen { color: #999; font-size: 0.8rem; }
+.badge-categoria {
+  background: #e8f5e9;
+  color: #2e7d32;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
 .btn-editar, .btn-eliminar {
   background: none;
   border: none;

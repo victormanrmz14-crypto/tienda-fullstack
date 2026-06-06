@@ -10,7 +10,7 @@ class ProductoController extends Controller
 {
     public function index()
     {
-        $productos = Producto::orderBy('id', 'desc')->get()->map(function ($producto) {
+        $productos = Producto::with('categoria')->orderBy('id', 'desc')->get()->map(function ($producto) {
             return [
                 ...$producto->toArray(),
                 'imagen_url' => $producto->imagen
@@ -25,11 +25,12 @@ class ProductoController extends Controller
     public function store(Request $request)
     {
         $datos = $request->validate([
-            'nombre'      => 'required|string|max:255',
-            'descripcion' => 'nullable|string',
-            'precio'      => 'required|numeric|min:0',
-            'stock'       => 'required|integer|min:0',
-            'imagen'      => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'nombre'       => 'required|string|max:255',
+            'descripcion'  => 'nullable|string',
+            'precio'       => 'required|numeric|min:0',
+            'stock'        => 'required|integer|min:0',
+            'categoria_id' => 'nullable|exists:categorias,id',
+            'imagen'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         if ($request->hasFile('imagen')) {
@@ -37,6 +38,7 @@ class ProductoController extends Controller
         }
 
         $producto = Producto::create($datos);
+        $producto->load('categoria');
 
         return response()->json([
             ...$producto->toArray(),
@@ -59,11 +61,12 @@ class ProductoController extends Controller
     public function update(Request $request, Producto $producto)
     {
         $datos = $request->validate([
-            'nombre'      => 'required|string|max:255',
-            'descripcion' => 'nullable|string',
-            'precio'      => 'required|numeric|min:0',
-            'stock'       => 'required|integer|min:0',
-            'imagen'      => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'nombre'       => 'required|string|max:255',
+            'descripcion'  => 'nullable|string',
+            'precio'       => 'required|numeric|min:0',
+            'stock'        => 'required|integer|min:0',
+            'categoria_id' => 'nullable|exists:categorias,id',
+            'imagen'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         if ($request->hasFile('imagen')) {
@@ -75,6 +78,7 @@ class ProductoController extends Controller
         }
 
         $producto->update($datos);
+        $producto->load('categoria');
 
         return response()->json([
             ...$producto->toArray(),

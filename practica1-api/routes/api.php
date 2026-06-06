@@ -4,12 +4,15 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProductoController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CategoriaController;
 
 // Rutas públicas
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login',    [AuthController::class, 'login']);
 Route::get('/productos', [ProductoController::class, 'index']);
 Route::get('/productos/{producto}', [ProductoController::class, 'show']);
+Route::apiResource('categorias', CategoriaController::class)->only(['index', 'show']);
+Route::get('categorias/{categoria}/productos', [CategoriaController::class, 'productos']);
 
 // Rutas protegidas
 Route::middleware('auth:sanctum')->group(function () {
@@ -18,6 +21,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user',    function (Request $request) {
         return $request->user();
     });
+    Route::apiResource('categorias', CategoriaController::class)->except(['index', 'show']);
 
     // Solo crear, editar y eliminar requieren autenticación
     Route::post('/productos',             [ProductoController::class, 'store']);
