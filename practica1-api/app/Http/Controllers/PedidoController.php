@@ -9,6 +9,7 @@ use App\Models\Pedido;
 use App\Models\Producto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class PedidoController extends Controller
 {
@@ -22,26 +23,42 @@ class PedidoController extends Controller
         ]);
 
         $pedido = DB::transaction(function () use ($request) {
-            $total = collect($request->items)
-                ->sum(fn($i) => $i['precio'] * $i['cantidad']);
+            $total  = 0;
+            $lineas = [];
+
+            // 1ª pasada: bloquea cada producto y valida que haya stock suficiente
+            foreach ($request->items as $item) {
+                $producto = Producto::lockForUpdate()->find($item['producto_id']);
+
+                if ($producto->stock < $item['cantidad']) {
+                    throw ValidationException::withMessages([
+                        'items' => "Stock insuficiente para «{$producto->nombre}». "
+                                 . "Disponible: {$producto->stock}, solicitado: {$item['cantidad']}.",
+                    ]);
+                }
+
+                // Usa el precio real de la BD, no el que envía el cliente
+                $total   += $producto->precio * $item['cantidad'];
+                $lineas[] = ['producto' => $producto, 'cantidad' => $item['cantidad']];
+            }
 
             $p = Pedido::create([
                 'user_id' => auth()->id(),
                 'total'   => $total,
             ]);
 
-            foreach ($request->items as $item) {
+            // 2ª pasada: ya validado, registra líneas y descuenta stock
+            foreach ($lineas as ['producto' => $producto, 'cantidad' => $cantidad]) {
                 $p->items()->create([
-                    'producto_id'     => $item['producto_id'],
-                    'cantidad'        => $item['cantidad'],
-                    'precio_unitario' => $item['precio'],
+                    'producto_id'     => $producto->id,
+                    'cantidad'        => $cantidad,
+                    'precio_unitario' => $producto->precio,
                 ]);
-                Producto::find($item['producto_id'])
-                        ->decrement('stock', $item['cantidad']);
+                $producto->decrement('stock', $cantidad);
 
-                $productoActualizado = Producto::find($item['producto_id']);
-                if ($productoActualizado->stock <= 5) {
-                    broadcast(new StockBajoAlerta($productoActualizado, $productoActualizado->stock));
+                $producto->refresh();
+                if ($producto->stock <= 5) {
+                    broadcast(new StockBajoAlerta($producto, $producto->stock));
                 }
             }
 

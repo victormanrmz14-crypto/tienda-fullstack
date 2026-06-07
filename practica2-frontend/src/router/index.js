@@ -31,9 +31,14 @@ const router = createRouter({
       component: () => import('@/views/RegisterView.vue'),
     },
     {
+      path: '/logout',
+      name: 'Logout',
+      component: () => import('@/views/LogoutView.vue'),
+    },
+    {
       path: '/admin',
       component: () => import('@/layouts/AdminLayout.vue'),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, roles: ['admin', 'editor'] },
       children: [
         {
           path: '',
@@ -75,6 +80,11 @@ router.beforeEach(async (to) => {
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     return { path: '/login', query: { redirect: to.fullPath } }
+  }
+
+  // Control por rol: el cliente no puede entrar a rutas de staff (ej. /admin)
+  if (to.meta.roles && !to.meta.roles.includes(auth.rol)) {
+    return { path: '/' }
   }
 })
 

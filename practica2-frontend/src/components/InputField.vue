@@ -26,16 +26,19 @@ defineEmits(['update:modelValue'])
 </script>
 
 <style scoped>
-.campo { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem; }
-label { font-size: 0.85rem; font-weight: 500; color: #444; }
+.campo { display: flex; flex-direction: column; gap: 0.45rem; margin-bottom: 1rem; }
+label { font-size: 0.85rem; font-weight: 600; color: var(--text); }
 input {
-  padding: 0.6rem 0.8rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  padding: 0.65rem 0.8rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
   font-size: 1rem;
-  transition: border-color 0.2s;
+  background: #fff;
+  color: var(--text);
+  transition: var(--transition);
 }
-input:focus { outline: none; border-color: #42b883; }
-input.input-error { border-color: #e53e3e; }
-.error-msg { font-size: 0.8rem; color: #e53e3e; }
+input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+input.input-error { border-color: var(--danger); }
+input.input-error:focus { box-shadow: 0 0 0 3px var(--danger-soft); }
+.error-msg { font-size: 0.8rem; color: var(--danger); font-weight: 600; }
 </style>

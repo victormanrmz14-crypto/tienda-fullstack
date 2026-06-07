@@ -1,11 +1,11 @@
 <template>
-  <RouterLink to="/carrito" class="cart-link">
-    <span class="cart-icon">
-      🛒
-      <span v-if="carrito.totalItems > 0" class="badge">
+  <RouterLink to="/carrito" class="cart-link" aria-label="Carrito">
+    <span class="cart-icon">🛒</span>
+    <Transition name="badge-pop">
+      <span v-if="carrito.totalItems > 0" :key="carrito.totalItems" class="badge">
         {{ carrito.totalItems }}
       </span>
-    </span>
+    </Transition>
   </RouterLink>
 </template>
 
@@ -16,21 +16,42 @@ const carrito = useCarritoStore()
 </script>
 
 <style scoped>
-.cart-link { text-decoration: none; position: relative; }
-.cart-icon { font-size: 1.5rem; position: relative; display: inline-block; }
+.cart-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  margin-left: 0.3rem;
+  transition: var(--transition);
+}
+.cart-link:hover {
+  background: var(--primary-soft);
+  transform: translateY(-1px);
+}
+.cart-icon {
+  font-size: 1.35rem;
+  line-height: 1;
+}
 .badge {
   position: absolute;
-  top: -8px;
-  right: -10px;
-  background: #e74c3c;
-  color: white;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
+  top: 2px;
+  right: 0;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  background: var(--gradient-soft);
+  color: #fff;
+  border-radius: var(--radius-pill);
   font-size: 0.7rem;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
+  box-shadow: var(--shadow-secondary);
+  border: 2px solid #fff;
 }
+.badge-pop-enter-active { animation: pop 0.35s ease; }
 </style>

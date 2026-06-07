@@ -65,19 +65,20 @@ const { pedidosNuevos, alertasStock } = useAdminChannel()
   align-items: flex-start;
   gap: 0.75rem;
   padding: 1rem;
-  border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  background: #fff;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
   animation: slideIn 0.3s ease;
 }
 
-.toast-pedido { background: #e8f5e9; border-left: 4px solid #42b883; }
-.toast-stock  { background: #fff3cd; border-left: 4px solid #f59e0b; }
+.toast-pedido { border-left: 4px solid var(--primary); }
+.toast-stock  { border-left: 4px solid var(--warning); }
 
 .toast-icon { font-size: 1.5rem; }
 .toast-body { flex: 1; }
-.toast-body strong { display: block; font-size: 0.95rem; margin-bottom: 0.2rem; }
-.toast-body p { margin: 0; font-size: 0.85rem; color: #555; }
-.toast-body small { font-size: 0.75rem; color: #999; }
+.toast-body strong { display: block; font-size: 0.95rem; margin-bottom: 0.2rem; color: var(--text); }
+.toast-body p { margin: 0; font-size: 0.85rem; color: var(--text-muted); }
+.toast-body small { font-size: 0.75rem; color: var(--text-soft); }
 
 /* Animaciones TransitionGroup */
 .toast-enter-active { transition: all 0.3s ease; }
