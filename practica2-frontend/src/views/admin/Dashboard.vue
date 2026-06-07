@@ -41,12 +41,27 @@
         </RouterLink>
       </div>
     </div>
+
+    <Suspense>
+      <GraficaVentas />
+      <template #fallback>
+        <div style="padding: 2rem; text-align: center; color: #999;">
+          📊 Cargando gráfica...
+        </div>
+      </template>
+    </Suspense>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
 import axios from 'axios'
+
+const GraficaVentas = defineAsyncComponent({
+  loader: () => import('@/components/GraficaVentas.vue'),
+  delay: 200,
+  timeout: 5000,
+})
 
 const productos = ref([])
 

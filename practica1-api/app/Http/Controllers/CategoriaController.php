@@ -7,14 +7,19 @@ use App\Http\Resources\CategoriaResource;
 use App\Http\Resources\ProductoResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 
 class CategoriaController extends Controller
 {
     public function index()
     {
-        return CategoriaResource::collection(
-            Categoria::with('productos')->get()
-        );
+        $categorias = Cache::remember('categorias.todas', 3600, function () {
+            return CategoriaResource::collection(
+                Categoria::all()
+            )->toArray(request());
+        });
+
+        return response()->json(['data' => $categorias]);
     }
 
     public function store(Request $request)
@@ -27,6 +32,7 @@ class CategoriaController extends Controller
         $datos['slug'] = Str::slug($datos['nombre']);
 
         $categoria = Categoria::create($datos);
+        Cache::forget('categorias.todas');
 
         return new CategoriaResource($categoria);
     }
@@ -45,6 +51,7 @@ class CategoriaController extends Controller
 
         $datos['slug'] = Str::slug($datos['nombre']);
         $categoria->update($datos);
+        Cache::forget('categorias.todas');
 
         return new CategoriaResource($categoria);
     }
@@ -52,6 +59,7 @@ class CategoriaController extends Controller
     public function destroy(Categoria $categoria)
     {
         $categoria->delete();
+        Cache::forget('categorias.todas');
         return response()->json(null, 204);
     }
 
