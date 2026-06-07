@@ -1,12 +1,15 @@
 import Echo from 'laravel-echo'
 import Pusher from 'pusher-js'
-import { useAuthStore } from '@/stores/auth'
 
 window.Pusher = Pusher
 
-const createEcho = () => {
-  const auth = useAuthStore()
-  return new Echo({
+let echoInstance = null
+
+export const getEcho = (token) => {
+  if (echoInstance) {
+    echoInstance.disconnect()
+  }
+  echoInstance = new Echo({
     broadcaster:       'reverb',
     key:               import.meta.env.VITE_REVERB_APP_KEY,
     wsHost:            import.meta.env.VITE_REVERB_HOST,
@@ -17,11 +20,12 @@ const createEcho = () => {
     authEndpoint:      'http://localhost:8000/api/broadcasting/auth',
     auth: {
       headers: {
-        Authorization: `Bearer ${auth.token}`,
+        Authorization: `Bearer ${token}`,
         Accept:        'application/json',
       }
     }
   })
+  return echoInstance
 }
 
-export default createEcho()
+export default getEcho
