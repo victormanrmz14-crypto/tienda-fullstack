@@ -47,7 +47,7 @@ const ultimos = ref([])
 onMounted(async () => {
   try {
     const res = await axios.get('http://localhost:8000/api/productos')
-    ultimos.value = res.data.slice(0, 3)
+    ultimos.value = res.data.data.slice(0, 3)
   } catch (e) {
     console.error(e)
   } finally {
