@@ -23,7 +23,7 @@ onMounted(() => {
   intervalo = setInterval(async () => {
     try {
       const { data } = await axios.get(
-        `http://localhost:8000/api/pedidos/${props.pedidoId}`,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/pedidos/${props.pedidoId}`,
         { headers: { Authorization: `Bearer ${auth.token}` } }
       )
       emailListo.value = !!data.email_enviado_at
@@ -44,10 +44,10 @@ onUnmounted(() => clearInterval(intervalo))
   align-items: center;
   gap: 0.5rem;
   padding: 1rem 2rem;
-  border-radius: 12px;
+  border-radius: var(--radius);
   font-size: 1.1rem;
-  font-weight: 500;
+  font-weight: 600;
 }
-.procesando { background: #fff3cd; color: #856404; }
-.listo      { background: #d4edda; color: #155724; }
+.procesando { background: var(--warning-soft); color: #9c4221; }
+.listo      { background: var(--success-soft); color: #276749; }
 </style>

@@ -14,9 +14,15 @@ export const useCarritoStore = defineStore('carrito', {
 
     actions: {
         agregar(producto) {
+            const max = producto.stock ?? Infinity
+            if (max <= 0) return  // sin stock: no se agrega
+
             const existente = this.items.find(i => i.id === producto.id)
             if (existente) {
-                existente.cantidad++
+                // No superar el stock disponible
+                if (existente.cantidad < (existente.stock ?? max)) {
+                    existente.cantidad++
+                }
             } else {
                 this.items.push({ ...producto, cantidad: 1 })
             }
@@ -32,7 +38,10 @@ export const useCarritoStore = defineStore('carrito', {
                 return
             }
             const item = this.items.find(i => i.id === id)
-            if (item) item.cantidad = cantidad
+            if (item) {
+                const max = item.stock ?? Infinity
+                item.cantidad = Math.min(cantidad, max)  // tope = stock disponible
+            }
         },
 
         vaciar() {

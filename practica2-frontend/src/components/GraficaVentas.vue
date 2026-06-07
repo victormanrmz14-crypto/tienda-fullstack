@@ -24,11 +24,10 @@ const meses = [
 
 <style scoped>
 .grafica-placeholder {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  background: transparent;
 }
+.grafica-placeholder h3 { margin: 0 0 0.3rem; font-size: 1.15rem; font-weight: 800; }
+.grafica-placeholder > p { margin: 0; font-size: 0.82rem; color: var(--text-muted); }
 .barras {
   display: flex;
   align-items: flex-end;
@@ -45,9 +44,10 @@ const meses = [
 }
 .barra {
   width: 100%;
-  background: linear-gradient(to top, #42b883, #35495e);
-  border-radius: 4px 4px 0 0;
+  background: var(--gradient);
+  border-radius: 6px 6px 0 0;
   transition: height 0.5s ease;
 }
-span { font-size: 0.75rem; color: #666; }
+.barra:hover { filter: brightness(1.08); }
+span { font-size: 0.75rem; color: var(--text-muted); }
 </style>

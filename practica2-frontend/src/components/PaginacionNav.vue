@@ -58,35 +58,39 @@ const ir = (pagina) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
-  margin: 2rem 0 1rem;
+  gap: 0.9rem;
+  margin: 2.5rem 0 1rem;
 }
 .botones {
   display: flex;
-  gap: 0.35rem;
+  gap: 0.4rem;
   flex-wrap: wrap;
   justify-content: center;
 }
 .botones button {
-  min-width: 38px;
-  padding: 0.45rem 0.7rem;
-  border: 1px solid #ddd;
-  background: white;
-  border-radius: 8px;
+  min-width: 42px;
+  height: 42px;
+  padding: 0 0.7rem;
+  border: 1.5px solid var(--border);
+  background: #fff;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 0.9rem;
-  color: #333;
-  transition: all 0.15s;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text);
+  transition: var(--transition);
 }
 .botones button:hover:not(:disabled):not(.activo) {
-  border-color: #42b883;
-  color: #42b883;
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-2px);
 }
 .botones button.activo {
-  background: #42b883;
-  border-color: #42b883;
-  color: white;
-  font-weight: 600;
+  background: var(--gradient-soft);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: var(--shadow-primary);
 }
 .botones button:disabled {
   opacity: 0.4;
@@ -95,6 +99,6 @@ const ir = (pagina) => {
 .info {
   margin: 0;
   font-size: 0.85rem;
-  color: #777;
+  color: var(--text-muted);
 }
 </style>

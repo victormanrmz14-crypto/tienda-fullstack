@@ -2,6 +2,8 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import axios from 'axios'
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
 const props = defineProps({
   modelValue: { type: Object, required: true },
 })
@@ -33,7 +35,7 @@ watch(
 const categorias = ref([])
 onMounted(async () => {
   try {
-    const { data } = await axios.get('http://localhost:8000/api/categorias')
+    const { data } = await axios.get(`${API_URL}/api/categorias`)
     categorias.value = data.data ?? data
   } catch (e) {
     console.error('Error cargando categorías', e)
@@ -62,16 +64,22 @@ const ordenSeleccionado = computed({
 
 <template>
   <aside class="filtros-panel">
-    <h3>Filtros</h3>
+    <div class="panel-head">
+      <h3>🎛️ Filtros</h3>
+      <button class="btn-limpiar" @click="emit('limpiar')">Limpiar</button>
+    </div>
 
     <div class="campo">
       <label>Buscar</label>
-      <input
-        v-model="busquedaLocal"
-        type="text"
-        placeholder="Nombre o descripción..."
-        @input="onBuscar"
-      />
+      <div class="input-icono">
+        <span class="icono">🔍</span>
+        <input
+          v-model="busquedaLocal"
+          type="text"
+          placeholder="Nombre o descripción..."
+          @input="onBuscar"
+        />
+      </div>
     </div>
 
     <div class="campo">
@@ -94,7 +102,7 @@ const ordenSeleccionado = computed({
           placeholder="Mín"
           @change="onPrecio"
         />
-        <span>—</span>
+        <span class="guion">—</span>
         <input
           v-model="filtros.precio_max"
           type="number"
@@ -114,76 +122,91 @@ const ordenSeleccionado = computed({
         <option value="precio|desc">Precio (mayor a menor)</option>
       </select>
     </div>
-
-    <button class="btn-limpiar" @click="emit('limpiar')">
-      Limpiar filtros
-    </button>
   </aside>
 </template>
 
 <style scoped>
 .filtros-panel {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  padding: 1.25rem;
+  background: #fff;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  padding: 1.4rem;
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
+  gap: 1.2rem;
   position: sticky;
-  top: 1rem;
+  top: 5.5rem;
 }
-.filtros-panel h3 {
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--border);
+}
+.panel-head h3 {
   margin: 0;
-  font-size: 1.1rem;
-  color: #333;
+  font-size: 1.05rem;
+  font-weight: 800;
 }
+.btn-limpiar {
+  background: none;
+  border: none;
+  color: var(--secondary);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.2rem 0.4rem;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+.btn-limpiar:hover { background: var(--secondary-soft); }
 .campo {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.45rem;
 }
 .campo label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #555;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
+.input-icono { position: relative; }
+.input-icono .icono {
+  position: absolute;
+  left: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+.input-icono input { padding-left: 2.1rem; }
 .campo input,
 .campo select {
-  padding: 0.5rem 0.65rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  padding: 0.6rem 0.7rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
   font-size: 0.9rem;
   width: 100%;
   box-sizing: border-box;
+  background: var(--light);
+  color: var(--text);
+  transition: var(--transition);
 }
 .campo input:focus,
 .campo select:focus {
   outline: none;
-  border-color: #42b883;
+  border-color: var(--primary);
+  background: #fff;
+  box-shadow: 0 0 0 3px var(--primary-soft);
 }
 .precio-rango {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
-.precio-rango span {
-  color: #aaa;
-}
-.btn-limpiar {
-  margin-top: 0.25rem;
-  padding: 0.55rem;
-  background: #f5f5f5;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  color: #555;
-  transition: all 0.15s;
-}
-.btn-limpiar:hover {
-  background: #fdecea;
-  border-color: #e74c3c;
-  color: #c0392b;
-}
+.guion { color: var(--text-soft); }
 </style>
