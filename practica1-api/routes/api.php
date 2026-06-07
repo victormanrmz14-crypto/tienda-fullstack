@@ -5,11 +5,7 @@ use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\ProductoController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\CategoriaController;
-
-// Ruta de autenticación para canales privados
-Broadcast::routes(['middleware' => ['auth:sanctum']]);
 
 // Rutas públicas
 Route::post('/register', [AuthController::class, 'register']);
