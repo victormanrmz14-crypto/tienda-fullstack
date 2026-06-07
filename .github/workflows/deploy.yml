@@ -16,15 +16,23 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd /var/www/tienda-fullstack
+            git stash
             git pull origin main
+            git stash drop || true
+            
             cd practica1-api
             php8.4 /usr/local/bin/composer install --no-dev --optimize-autoloader
             php8.4 artisan migrate --force
             php8.4 artisan config:cache
             php8.4 artisan route:cache
             php8.4 artisan view:cache
+            
             cd ../practica2-frontend
+            chown -R ubuntu:ubuntu dist/ || true
             npm install
             npm run build
-            sudo supervisorctl restart laravel-worker:*
+            chown -R www-data:www-data dist/
+            
+            systemctl restart nginx
+            supervisorctl restart laravel-worker:*
             echo 'Despliegue completado ✅'
