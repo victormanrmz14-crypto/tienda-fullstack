@@ -61,9 +61,10 @@ const precioPromedio = computed(() => {
 onMounted(async () => {
   try {
     const res = await axios.get('http://localhost:8000/api/productos')
-    productos.value = res.data
+    productos.value = Array.isArray(res.data) ? res.data : res.data.data || []
   } catch (e) {
     console.error(e)
+    productos.value = []
   }
 })
 </script>
