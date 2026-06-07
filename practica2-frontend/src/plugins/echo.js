@@ -12,7 +12,7 @@ const echo = new Echo({
   wssPort:           import.meta.env.VITE_REVERB_PORT ?? 8080,
   forceTLS:          false,
   enabledTransports: ['ws', 'wss'],
-  authEndpoint:      'http://localhost:8000/broadcasting/auth',
+  authEndpoint:      'http://localhost:8000/api/broadcasting/auth',
   auth: {
     headers: {
       Authorization: `Bearer ${useAuthStore().token}`,
