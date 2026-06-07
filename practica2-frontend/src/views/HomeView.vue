@@ -6,6 +6,7 @@
         <RouterLink to="/catalogo">Catálogo</RouterLink>
         <RouterLink v-if="!auth.isAuthenticated" to="/login">Login</RouterLink>
         <RouterLink v-if="auth.isAuthenticated" to="/admin">Admin</RouterLink>
+        <CartIcon />
       </div>
     </nav>
 
@@ -37,6 +38,7 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
+import CartIcon from '@/components/CartIcon.vue'
 
 const auth    = useAuthStore()
 const loading = ref(true)
@@ -45,7 +47,7 @@ const ultimos = ref([])
 onMounted(async () => {
   try {
     const res = await axios.get('http://localhost:8000/api/productos')
-    ultimos.value = res.data.slice(0, 3)
+    ultimos.value = res.data.data.slice(0, 3)
   } catch (e) {
     console.error(e)
   } finally {

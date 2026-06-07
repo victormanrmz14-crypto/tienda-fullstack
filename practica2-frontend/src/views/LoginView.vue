@@ -44,7 +44,7 @@ const handleLogin = async () => {
   loading.value = true
   try {
     await auth.login(form)
-    router.push('/dashboard')
+    router.push('/admin')
   } catch (e) {
     error.value = e.response?.data?.message || 'Error al iniciar sesión'
   } finally {

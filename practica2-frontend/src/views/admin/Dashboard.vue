@@ -41,12 +41,27 @@
         </RouterLink>
       </div>
     </div>
+
+    <Suspense>
+      <GraficaVentas />
+      <template #fallback>
+        <div style="padding: 2rem; text-align: center; color: #999;">
+          📊 Cargando gráfica...
+        </div>
+      </template>
+    </Suspense>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
 import axios from 'axios'
+
+const GraficaVentas = defineAsyncComponent({
+  loader: () => import('@/components/GraficaVentas.vue'),
+  delay: 200,
+  timeout: 5000,
+})
 
 const productos = ref([])
 
@@ -61,9 +76,10 @@ const precioPromedio = computed(() => {
 onMounted(async () => {
   try {
     const res = await axios.get('http://localhost:8000/api/productos')
-    productos.value = res.data
+    productos.value = Array.isArray(res.data) ? res.data : res.data.data || []
   } catch (e) {
     console.error(e)
+    productos.value = []
   }
 })
 </script>

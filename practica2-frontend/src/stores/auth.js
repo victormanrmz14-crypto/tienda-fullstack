@@ -7,8 +7,9 @@ const api = axios.create({
 
 export const useAuthStore = defineStore('auth', {
     state: () => ({
-        user:  null,
-        token: localStorage.getItem('token') || null,
+        user:       null,
+        token:      localStorage.getItem('token') || null,
+        permisos:   { crear: false, editar: false, eliminar: false },
     }),
 
     getters: {
@@ -19,15 +20,15 @@ export const useAuthStore = defineStore('auth', {
         async register(data) {
             const res = await api.post('/register', data)
             this.token = res.data.token
-            this.user  = res.data.user
             localStorage.setItem('token', this.token)
+            await this.fetchUser()
         },
 
         async login(credentials) {
             const res = await api.post('/login', credentials)
             this.token = res.data.token
-            this.user  = res.data.user
             localStorage.setItem('token', this.token)
+            await this.fetchUser()
         },
 
         async logout() {
@@ -40,10 +41,17 @@ export const useAuthStore = defineStore('auth', {
         },
 
         async fetchUser() {
-            const res = await api.get('/me', {
-                headers: { Authorization: `Bearer ${this.token}` }
-            })
-            this.user = res.data.user
+            try {
+                const res = await api.get('/me', {
+                    headers: { Authorization: `Bearer ${this.token}` }
+                })
+                this.user = res.data
+                this.permisos = res.data.permisos ?? { crear: false, editar: false, eliminar: false }
+            } catch {
+                this.token = null
+                this.user  = null
+                localStorage.removeItem('token')
+            }
         },
     },
 })

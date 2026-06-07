@@ -6,6 +6,7 @@
         <RouterLink to="/catalogo">Catálogo</RouterLink>
         <RouterLink v-if="!auth.isAuthenticated" to="/login">Login</RouterLink>
         <RouterLink v-if="auth.isAuthenticated" to="/admin">Admin</RouterLink>
+        <CartIcon />
       </div>
     </nav>
 
@@ -47,6 +48,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
+import CartIcon from '@/components/CartIcon.vue'
 
 const props   = defineProps({ id: String })
 const auth    = useAuthStore()

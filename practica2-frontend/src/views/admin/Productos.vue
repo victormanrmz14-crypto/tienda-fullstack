@@ -1,8 +1,11 @@
 <template>
   <div class="admin-productos">
     <div class="page-header">
-      <h2>Gestión de Productos</h2>
-      <button class="btn-nuevo" @click="mostrarFormulario = true">
+      <div>
+        <h2>Gestión de Productos</h2>
+        <span class="badge-rol">{{ auth.user?.rol }}</span>
+      </div>
+      <button class="btn-nuevo" @click="mostrarFormulario = true" v-can="'crear'">
         + Nuevo Producto
       </button>
     </div>
@@ -13,23 +16,53 @@
 
       <div v-if="mensaje" :class="['mensaje', tipoMensaje]">{{ mensaje }}</div>
 
-      <div class="form-group">
-        <label>Nombre</label>
-        <input v-model="form.nombre" type="text" placeholder="Nombre del producto" />
-      </div>
-      <div class="form-group">
-        <label>Descripción</label>
-        <textarea v-model="form.descripcion" placeholder="Descripción"></textarea>
-      </div>
+      <InputField
+        label="Nombre"
+        name="nombre"
+        v-model="nombre"
+        placeholder="Nombre del producto"
+        :error="errors.nombre || erroresServidor.nombre?.[0]"
+      />
+
+      <InputField
+        label="Descripción"
+        name="descripcion"
+        v-model="descripcion"
+        placeholder="Descripción del producto"
+        :error="errors.descripcion || erroresServidor.descripcion?.[0]"
+      />
+
       <div class="form-row">
-        <div class="form-group">
-          <label>Precio</label>
-          <input v-model="form.precio" type="number" placeholder="0.00" />
-        </div>
-        <div class="form-group">
-          <label>Stock</label>
-          <input v-model="form.stock" type="number" placeholder="0" />
-        </div>
+        <InputField
+          label="Precio"
+          name="precio"
+          type="number"
+          v-model="precio"
+          placeholder="0.00"
+          :error="errors.precio || erroresServidor.precio?.[0]"
+        />
+        <InputField
+          label="Stock"
+          name="stock"
+          type="number"
+          v-model="stock"
+          placeholder="0"
+          :error="errors.stock || erroresServidor.stock?.[0]"
+        />
+      </div>
+
+      <div class="form-group">
+        <label>Categoría</label>
+        <select v-model="categoria_id">
+          <option value="">Sin categoría</option>
+          <option
+            v-for="cat in categorias"
+            :key="cat.id"
+            :value="cat.id"
+          >
+            {{ cat.nombre }}
+          </option>
+        </select>
       </div>
 
       <div class="form-group">
@@ -54,33 +87,40 @@
     <div v-else>
       <table class="tabla">
         <thead>
-        <tr>
-          <th>Imagen</th>
-          <th>Nombre</th>
-          <th>Precio</th>
-          <th>Stock</th>
-          <th>Acciones</th>
-        </tr>
+          <tr>
+            <th>Imagen</th>
+            <th>Nombre</th>
+            <th>Categoría</th>
+            <th>Precio</th>
+            <th>Stock</th>
+            <th>Acciones</th>
+          </tr>
         </thead>
         <tbody>
-        <tr v-for="producto in productos" :key="producto.id">
-          <td>
-            <img
+          <tr v-for="producto in productos" :key="producto.id">
+            <td>
+              <img
                 v-if="producto.imagen_url"
                 :src="producto.imagen_url"
                 class="tabla-imagen"
                 alt="imagen"
-            />
-            <span v-else class="sin-imagen">Sin imagen</span>
-          </td>
-          <td>{{ producto.nombre }}</td>
-          <td>${{ producto.precio }}</td>
-          <td>{{ producto.stock }}</td>
-          <td>
-            <button class="btn-editar" @click="editar(producto)">✏️</button>
-            <button class="btn-eliminar" @click="eliminar(producto.id)">🗑️</button>
-          </td>
-        </tr>
+              />
+              <span v-else class="sin-imagen">Sin imagen</span>
+            </td>
+            <td>{{ producto.nombre }}</td>
+            <td>
+              <span v-if="producto.categoria" class="badge-categoria">
+                {{ producto.categoria.nombre }}
+              </span>
+              <span v-else class="sin-imagen">Sin categoría</span>
+            </td>
+            <td>${{ producto.precio }}</td>
+            <td>{{ producto.stock }}</td>
+            <td>
+              <button class="btn-editar" @click="editar(producto)" v-can="'editar'">✏️</button>
+              <button class="btn-eliminar" @click="eliminar(producto.id)" v-can="'eliminar'">🗑️</button>
+            </td>
+          </tr>
         </tbody>
       </table>
       <p v-if="productos.length === 0" class="empty">No hay productos registrados.</p>
@@ -91,22 +131,34 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
+import { useForm, useField } from 'vee-validate'
 import { useAuthStore } from '@/stores/auth'
+import { productoSchema } from '@/schemas/productoSchema'
+import InputField from '@/components/InputField.vue'
 
-const auth            = useAuthStore()
-const productos       = ref([])
+const auth             = useAuthStore()
+const productos        = ref([])
 const loadingProductos = ref(true)
-const loading         = ref(false)
+const loading          = ref(false)
 const mostrarFormulario = ref(false)
-const editando        = ref(null)
-const preview         = ref(null)
-const imagen          = ref(null)
-const mensaje         = ref('')
-const tipoMensaje     = ref('success')
+const editando         = ref(null)
+const preview          = ref(null)
+const imagen           = ref(null)
+const mensaje          = ref('')
+const tipoMensaje      = ref('success')
+const categorias       = ref([])
+const categoria_id     = ref('')
+const erroresServidor  = ref({})
 
-const form = ref({
-  nombre: '', descripcion: '', precio: '', stock: ''
+const { handleSubmit, errors, resetForm, setValues } = useForm({
+  validationSchema: productoSchema,
+  initialValues: { nombre: '', descripcion: '', precio: '', stock: '' }
 })
+
+const { value: nombre }      = useField('nombre')
+const { value: descripcion } = useField('descripcion')
+const { value: precio }      = useField('precio')
+const { value: stock }       = useField('stock')
 
 const headers = { Authorization: `Bearer ${auth.token}` }
 
@@ -114,7 +166,7 @@ const cargarProductos = async () => {
   loadingProductos.value = true
   try {
     const res = await axios.get('http://localhost:8000/api/productos')
-    productos.value = res.data
+    productos.value = res.data.data
   } catch (e) {
     console.error(e)
   } finally {
@@ -122,22 +174,33 @@ const cargarProductos = async () => {
   }
 }
 
+const cargarCategorias = async () => {
+  try {
+    const res = await axios.get('http://localhost:8000/api/categorias')
+    categorias.value = res.data.data
+  } catch (e) {
+    console.error(e)
+  }
+}
+
 const onImageChange = (e) => {
   const file = e.target.files[0]
   if (!file) return
-  imagen.value   = file
-  preview.value  = URL.createObjectURL(file)
+  imagen.value  = file
+  preview.value = URL.createObjectURL(file)
 }
 
-const guardar = async () => {
+const guardar = handleSubmit(async (values) => {
   loading.value = true
   mensaje.value = ''
+  erroresServidor.value = {}
   try {
     const fd = new FormData()
-    fd.append('nombre',      form.value.nombre)
-    fd.append('descripcion', form.value.descripcion)
-    fd.append('precio',      form.value.precio)
-    fd.append('stock',       form.value.stock)
+    fd.append('nombre',       values.nombre)
+    fd.append('descripcion',  values.descripcion || '')
+    fd.append('precio',       values.precio)
+    fd.append('stock',        values.stock)
+    fd.append('categoria_id', categoria_id.value)
     if (imagen.value) fd.append('imagen', imagen.value)
 
     if (editando.value) {
@@ -150,28 +213,34 @@ const guardar = async () => {
         headers: { ...headers, 'Content-Type': 'multipart/form-data' }
       })
     }
-
     tipoMensaje.value = 'success'
     mensaje.value = editando.value ? 'Producto actualizado.' : 'Producto creado.'
     await cargarProductos()
     setTimeout(() => cancelar(), 1500)
   } catch (e) {
-    tipoMensaje.value = 'error'
-    mensaje.value = e.response?.data?.message || 'Error al guardar.'
+    if (e.response?.status === 422) {
+      erroresServidor.value = e.response.data.errors
+      tipoMensaje.value = 'error'
+      mensaje.value = 'Corrige los errores del formulario.'
+    } else {
+      tipoMensaje.value = 'error'
+      mensaje.value = e.response?.data?.message || 'Error al guardar.'
+    }
   } finally {
     loading.value = false
   }
-}
+})
 
 const editar = (producto) => {
   editando.value = producto.id
-  form.value = {
+  setValues({
     nombre:      producto.nombre,
     descripcion: producto.descripcion || '',
     precio:      producto.precio,
     stock:       producto.stock,
-  }
-  preview.value        = producto.imagen_url || null
+  })
+  categoria_id.value      = producto.categoria_id || ''
+  preview.value           = producto.imagen_url || null
   mostrarFormulario.value = true
 }
 
@@ -187,20 +256,35 @@ const eliminar = async (id) => {
 
 const cancelar = () => {
   mostrarFormulario.value = false
-  editando.value  = null
-  imagen.value    = null
-  preview.value   = null
-  mensaje.value   = ''
-  form.value = { nombre: '', descripcion: '', precio: '', stock: '' }
+  editando.value        = null
+  imagen.value          = null
+  preview.value         = null
+  mensaje.value         = ''
+  categoria_id.value    = ''
+  erroresServidor.value = {}
+  resetForm()
 }
 
-onMounted(cargarProductos)
+onMounted(async () => {
+  await cargarProductos()
+  await cargarCategorias()
+})
 </script>
 
 <style scoped>
 .admin-productos h2 { margin: 0 0 2rem; }
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
 .page-header h2 { margin: 0; }
+.page-header > div { display: flex; align-items: center; gap: 1rem; }
+.badge-rol {
+  background: #35495e;
+  color: white;
+  padding: 0.2rem 0.7rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  font-weight: 600;
+}
 .btn-nuevo {
   background: #42b883;
   color: white;
@@ -218,15 +302,16 @@ onMounted(cargarProductos)
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 .formulario-card h3 { margin: 0 0 1.5rem; }
-.form-group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-input, textarea {
+.form-group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem; }
+textarea, select {
   padding: 0.6rem 0.8rem;
   border: 1px solid #ddd;
   border-radius: 8px;
   font-size: 1rem;
 }
 textarea { resize: vertical; min-height: 80px; }
+select { background: white; cursor: pointer; }
 .preview img { margin-top: 0.5rem; max-width: 150px; border-radius: 8px; }
 .form-acciones { display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem; }
 .btn-cancelar {
@@ -265,6 +350,14 @@ textarea { resize: vertical; min-height: 80px; }
 .tabla tr:hover td { background: #f8f9fa; }
 .tabla-imagen { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; }
 .sin-imagen { color: #999; font-size: 0.8rem; }
+.badge-categoria {
+  background: #e8f5e9;
+  color: #2e7d32;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
 .btn-editar, .btn-eliminar {
   background: none;
   border: none;

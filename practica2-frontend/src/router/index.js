@@ -57,6 +57,12 @@ const router = createRouter({
       name: 'carrito',
       component: () => import('@/views/CartView.vue'),
     },
+    {
+      path: '/pedidos/:id/confirmacion',
+      name: 'ConfirmacionPedido',
+      component: () => import('@/views/ConfirmacionPedido.vue'),
+      meta: { requiresAuth: true }
+    },
   ],
 })
 

@@ -56,7 +56,7 @@ const handleRegister = async () => {
   loading.value = true
   try {
     await auth.register(form)
-    router.push('/dashboard')
+    router.push('/admin')
   } catch (e) {
     error.value = e.response?.data?.message || 'Error al registrarse'
   } finally {
